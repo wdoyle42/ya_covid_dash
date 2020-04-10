@@ -5,11 +5,10 @@
 
 library(tidyverse)
 library(shiny)
-library(readxl)
 library(scales)
 library(ggrepel)
 
-select_state<-"CA"
+select_state<-"NY"
 
 usa_data<-read_rds("usa_data.Rds")
 
