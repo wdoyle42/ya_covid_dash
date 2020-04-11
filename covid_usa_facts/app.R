@@ -8,16 +8,14 @@ library(shiny)
 library(scales)
 library(ggrepel)
 
+## Default state
 select_state<-"NY"
 
 usa_data<-read_rds("usa_data.Rds")
 
-#state_counties<-unique(filter(usa_data,State==select_state)$County)
-
-#select_counties<-state_counties[1:5]
-
 case_plot<-function(data_frame,select_state,select_counties,var_name,transformation){
 
+# type of transformation    
 if(transformation=="Log"){
     transformation="log"
 } else{
@@ -53,9 +51,8 @@ gg
 }
 
 ## Only key variables listed
-usa_data_sub<-
-    select(usa_data,`Case Count`,`Daily Increase`,`Percent Change`)
-
+usa_data_sub<-usa_data%>%
+    select(-State,-County,-Date)
 
 # Define UI for application 
 ui <- fluidPage(
