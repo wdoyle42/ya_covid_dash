@@ -3,17 +3,18 @@
 ## Script downloads and preps case count data from: https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/
 ## Data courtesy of usa facts
 ## Will Doyle
-## Rev: 2020-04-10
+## Rev: 2020-04-11
 
 library(tidyverse)
 library(lubridate)
 library(httr)
+setwd("/Users/doylewr/ya_covid_dash/")
 library(here)
 
 myurl<-"https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_confirmed_usafacts.csv"
 
 ## Open time of last update
-last_update<-read_lines(here("scripts","last_update.txt"))%>%ymd_hms()
+last_update<-read_lines(here("covid_usa_facts","last_update.txt"))%>%ymd_hms()
 
 ## Request header info
 file_get <- GET(myurl)
@@ -24,7 +25,7 @@ file_change_time<-cache_info(file_get)$modified%>%ymd_hms()
 ## If it has changed, download relevant files, otherwise post no changes
 
 if (file_change_time<last_update){
-  write_lines(file_change_time,"last_update.txt")
+  write_lines(file_change_time,here("covid_usa_facts","last_update.txt"))
   
 download.file(myurl,destfile = here("data","covid_confirmed_usafacts.csv"))
 

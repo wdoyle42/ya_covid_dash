@@ -7,13 +7,12 @@ library(tidyverse)
 library(shiny)
 library(scales)
 library(ggrepel)
-library(here)
 
 ## Default state
 select_state<-"NY"
 
 usa_data<-read_rds("usa_data.Rds")
-last_update<-read_lines(here("scripts","last_update.txt"))
+last_update<-read_lines("last_update.txt")
 
 case_plot<-function(data_frame,select_state,select_counties,var_name,transformation){
 
@@ -109,36 +108,51 @@ ui <- fluidPage(
 # Define server 
 server <- function(input, output,session) {
     
+    
 updateSelectizeInput(session,"county_choice","state_choice")     
     
-    output$state_selector <- renderUI({
+    
+    output$state_selector <-    
+        renderUI({
         selectizeInput(
             "state_choice",
             "State Choice",
             choices = unique(usa_data$State),
             multiple = FALSE,
             selected = select_state)
-        })
-    
-    
-    output$county_selector<-renderUI({
+        }) 
         
-        state_counties = usa_data%>%
+    
+    state_counties <-reactive({
+        
+        req(input$state_choice)
+        
+        usa_data%>%
             filter(State==input$state_choice)%>%
             mutate(County=fct_reorder(.f=as_factor(as.character(County)),.x=`Case Count`,.fun = "max",.desc = TRUE))%>%
             arrange(-`Case Count`)%>%
-            select(County)
+            select(County)%>%
+            group_by(County)%>%    
+            summarize(count=n()) %>%
+            select(County)%>%    
+            as.vector()    
+    })
+      
+    output$county_selector<-renderUI({
+        ## Get list of counties    
         
-        state_counties<-levels(state_counties$County)
-            
+        state_counties=state_counties()
+        
         selectizeInput("county_choice",
                        "County Choice",
                        choices=state_counties,
                        multiple=TRUE,
-                       selected=state_counties[1:5])
+                       selected=state_counties$County[1:5])
         })
     
     output$casePlot <- renderPlot({
+        
+        req(input$state_choice,input$county_choice)
         
      case_plot(usa_data,
                input$state_choice,
