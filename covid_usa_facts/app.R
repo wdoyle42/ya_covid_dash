@@ -7,11 +7,13 @@ library(tidyverse)
 library(shiny)
 library(scales)
 library(ggrepel)
+library(here)
 
 ## Default state
 select_state<-"NY"
 
 usa_data<-read_rds("usa_data.Rds")
+last_update<-read_lines(here("scripts","last_update.txt"))
 
 case_plot<-function(data_frame,select_state,select_counties,var_name,transformation){
 
@@ -58,7 +60,7 @@ usa_data_sub<-usa_data%>%
 ui <- fluidPage(
 
     # Application title
-    titlePanel("Confirmed Positive Covid-19 Cases by State"),
+    titlePanel("Confirmed Positive Covid-19 Cases by State and County"),
 
     # Sidebar 
     sidebarLayout(
@@ -80,14 +82,21 @@ ui <- fluidPage(
                         selected="None"
                         ),
           
-         HTML('This graphic shows the number of positive tests recorded in each 
+         HTML(paste('This graphic shows the number of positive tests recorded in each 
                   county in each state from data 
                 collected and reported by USA facts:   <a href="https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/" 
                 target="_blank" > Coronavirus in the United States </a> 
     
     <br><br>
                   You can choose counties in the search bar above by typing in the county name.
-                  Counties can be dropped by selecting and using the delete key. ')
+                  Counties can be dropped by selecting and using the delete key. 
+    <br><br>          
+    
+    Written by Will Doyle, wdoyle42@gmail.com
+    <br><br>          
+    
+              Last update :
+              ' ,last_update, " GMT"))
         ),
 
         # Show a plot 

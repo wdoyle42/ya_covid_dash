@@ -16,7 +16,6 @@ myurl<-"https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_
 last_update<-read_lines(here("scripts","last_update.txt"))%>%ymd_hms()
 
 ## Request header info
-
 file_get <- GET(myurl)
 
 ## Check to see if it's changed
