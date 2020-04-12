@@ -16,6 +16,7 @@ myurl<-"https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_
 ## Open time of last update
 last_update<-read_lines(here("covid_usa_facts","last_update.txt"))%>%ymd_hms()
 
+
 ## Request header info
 file_get <- GET(myurl)
 
@@ -24,7 +25,7 @@ file_change_time<-cache_info(file_get)$modified%>%ymd_hms()
 
 ## If it has changed, download relevant files, otherwise post no changes
 
-if (file_change_time<last_update){
+if (file_change_time>last_update){
   write_lines(file_change_time,here("covid_usa_facts","last_update.txt"))
   
 download.file(myurl,destfile = here("data","covid_confirmed_usafacts.csv"))
@@ -33,9 +34,9 @@ myurl<-"https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_
 
 download.file(myurl,destfile = here("data","covid_deaths_usafacts.csv"))
 
-paste("Updating, revisons from",file_change_time)
+paste("Updating, revisons from",file_change_time, "at",now())
 } else {
-  paste("No update necessary")
+  paste("No update necessary at", now())
 }
 ## Open case count data
 usa_data<-read_csv(here("data","covid_confirmed_usafacts.csv"))

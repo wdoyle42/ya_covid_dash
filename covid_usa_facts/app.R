@@ -14,6 +14,10 @@ select_state<-"NY"
 usa_data<-read_rds("usa_data.Rds")
 last_update<-read_lines("last_update.txt")
 
+## Key function: Case PLot
+## Takes data, state, county, variable and transformation
+## Creates a line plot showing results. 
+
 case_plot<-function(data_frame,select_state,select_counties,var_name,transformation){
 
 # type of transformation    
