@@ -1,12 +1,13 @@
 # Positive COVID-19 Case Counts in WA
 # Plots data from: https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/
 # AU: Will Doyle, wdoyle42@gmail.com
-# REV: 2020-04-11
+# REV: 2020-04-15
 
 library(tidyverse)
 library(shiny)
 library(scales)
 library(ggrepel)
+library(plotly)
 
 ## Default state
 select_state<-"NY"
@@ -32,27 +33,27 @@ data_frame$var<-unlist(data_frame[var_name][[1]])
 data_frame<-data_frame%>%
     filter(State==select_state)%>%
     filter(County%in%select_counties)
-    
+
 gg<-ggplot(data_frame,
-           aes(x=Date,
-               y=var,
-               color=County
-           ))
-gg<-gg+geom_line()
-gg<-gg+geom_point()
-gg<-gg+scale_y_continuous(breaks=pretty_breaks(n=10),trans=transformation)
-gg<-gg+geom_label_repel(data=filter(data_frame,
-                              County%in%select_counties,
-                              Date==max(data_frame$Date)),
-                              aes(label=paste(County,
-                                              round(var))),
-                              parse=FALSE,
-                  size=5.5
-#                  nudge_y = 15,
-#                  nudge_x=-2
+           aes(text=paste0(data_frame$County," ",data_frame$Date,":" , prettyNum(data_frame$var,big.mark=",",digits=0,scientific=FALSE)))
 )
-gg<-gg+theme(legend.position = "none",text = element_text(size=18))+ylab(var_name)
-gg
+             
+gg<-gg+geom_line(aes(x=Date,
+                          y=var,
+                          group=County,
+                     color=County))
+
+gg<-gg+geom_point(aes(x=Date,
+                       y=var,
+                       color=County,group=County))
+
+gg<-gg+scale_y_continuous(breaks=pretty_breaks(n=10),trans=transformation)
+
+gg<-gg+theme(legend.position = "none")+ylab(var_name)
+
+out<-ggplotly(gg,tooltip="text")
+
+out
 }
 
 ## Only key variables listed
@@ -104,7 +105,7 @@ ui <- fluidPage(
 
         # Show a plot 
         mainPanel(
-           plotOutput("casePlot")
+           plotlyOutput("casePlot")
         )
     )
 )
@@ -154,7 +155,7 @@ updateSelectizeInput(session,"county_choice","state_choice")
                        selected=state_counties$County[1:5])
         })
     
-    output$casePlot <- renderPlot({
+    output$casePlot <- renderPlotly({
         
         req(input$state_choice,input$county_choice)
         
