@@ -51,7 +51,7 @@ gg<-gg+scale_y_continuous(breaks=pretty_breaks(n=10),trans=transformation)
 
 gg<-gg+theme(legend.position = "none")+ylab(var_name)
 
-out<-ggplotly(gg,tooltip="text")
+out<-ggplotly(gg,tooltip="text")%>%layout(hovermode='compare')
 
 out
 }
