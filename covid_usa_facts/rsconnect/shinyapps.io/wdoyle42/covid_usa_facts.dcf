@@ -5,8 +5,8 @@ account: wdoyle42
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 2096956
-bundleId: 3027411
+bundleId: 3045186
 url: https://wdoyle42.shinyapps.io/covid_usa_facts/
-when: 1587136210.49331
+when: 1587487321.79588
 asMultiple: FALSE
 asStatic: FALSE
