@@ -1,4 +1,4 @@
-# Positive COVID-19 Case Counts in WA
+# Positive COVID-19 Case Counts in US
 # Plots data from: https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/
 # AU: Will Doyle, wdoyle42@gmail.com
 # REV: 2020-04-15
