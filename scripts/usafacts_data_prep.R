@@ -1,25 +1,31 @@
 
-
 ## Using USA Facts data
 ## Script downloads and preps case count data from: https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/
 ## Data courtesy of usa facts
 ## Will Doyle
-## Rev: 2020-04-11
+## Rev: 2020-04-29
 
 library(tidyverse)
+library(tibbletime)
 library(lubridate)
 library(httr)
 setwd("/Users/doylewr/ya_covid_dash/")
 library(here)
 
-myurl <-
-  "https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_confirmed_usafacts.csv"
+## Define 3-day rolling average
+
+rolling_3_mean<-rollify(~mean(.x,na.rm=TRUE),window=3)
 
 ## Open time of last update
 last_update <-
   read_lines(here("covid_usa_facts", "last_update.txt")) %>% ymd_hms()
 
+
 ## Request header info
+
+myurl <-
+  "https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_confirmed_usafacts.csv"
+
 file_get <- GET(myurl)
 
 ## Check to see if it's changed
@@ -28,6 +34,11 @@ file_change_time <- cache_info(file_get)$modified %>% ymd_hms()
 ## If it has changed, download relevant files, otherwise post no changes
 
 if (file_change_time > last_update) {
+  
+  myurl <-
+    "https://usafactsstatic.blob.core.windows.net/public/data/covid-19/covid_confirmed_usafacts.csv"
+  
+  ## Update change time
   write_lines(file_change_time,
               here("covid_usa_facts", "last_update.txt"))
   
@@ -93,6 +104,7 @@ usa_data <-
   mutate(`Percent Change, Cases` = (((
     `Case Count` - lag(`Case Count`)
   ) / `Case Count`) * 100)) %>%
+  mutate(`3-Day Mean, New Cases`=rolling_3_mean(`Daily Increase, Cases`))%>%
   mutate(`Daily Increase, Deaths` = `Deaths` - lag(`Deaths`)) %>%
   mutate(`Percent Change, Deaths` = (((
     `Deaths` - lag(`Deaths`)
@@ -104,6 +116,7 @@ usa_data <-
     Date,
     `Case Count`,
     `Daily Increase, Cases`,
+    `3-Day Mean, New Cases`,
     `Percent Change, Cases`,
     Deaths,
     `Daily Increase, Deaths`,
@@ -113,6 +126,3 @@ usa_data <-
 
 ## Write data out to app directory
 write_rds(usa_data, path = here("covid_usa_facts", "usa_data.Rds"))
-
-
-
