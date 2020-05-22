@@ -12,14 +12,16 @@ library(plotly)
 ## Default state
 select_state<-"NY"
 
-usa_data<-read_rds("usa_data.Rds")
+usa_data_county<-read_rds("usa_data_county.Rds")
+usa_data_state<-read_rds("usa_data_state.Rds")
+
 last_update<-read_lines("last_update.txt")
 
 ## Key function: Case PLot
 ## Takes data, state, county, variable and transformation
 ## Creates a line plot showing results. 
 
-case_plot<-function(data_frame,select_state,select_counties,var_name,transformation){
+county_case_plot<-function(data_frame,select_state,select_counties,var_name,transformation){
 
 # type of transformation    
 if(transformation=="Log"){
@@ -30,9 +32,6 @@ if(transformation=="Log"){
     
 data_frame$var<-unlist(data_frame[var_name][[1]])    
 
-data_frame<-data_frame%>%
-    filter(State==select_state)%>%
-    filter(County%in%select_counties)
 
 gg<-ggplot(data_frame,
            aes(text=paste0(data_frame$County," ",data_frame$Date,":" , prettyNum(data_frame$var,big.mark=",",digits=0,scientific=FALSE)))
@@ -56,9 +55,49 @@ out<-ggplotly(gg,tooltip="text")%>%layout(hovermode='compare')
 out
 }
 
+## State version
+state_case_plot<-function(data_frame,select_state,var_name,transformation){
+  
+  # type of transformation    
+  if(transformation=="Log"){
+    transformation="log"
+  } else{
+    transformation="identity"
+  }   
+  
+  data_frame$var<-unlist(data_frame[var_name][[1]])    
+  
+  
+  gg<-ggplot(data_frame,
+             aes(text=paste0(data_frame$State," ",data_frame$Date,":" , prettyNum(data_frame$var,big.mark=",",digits=0,scientific=FALSE)))
+  )
+  
+  gg<-gg+geom_line(aes(x=Date,
+                       y=var,
+                       group=State,
+                       color=State))
+  
+  gg<-gg+geom_point(aes(x=Date,
+                        y=var,
+                        color=State,group=State))
+  
+  gg<-gg+scale_y_continuous(breaks=pretty_breaks(n=10),trans=transformation)
+  
+  gg<-gg+theme(legend.position = "none")+ylab(var_name)
+  
+  out<-ggplotly(gg,tooltip="text")%>%layout(hovermode='compare')
+  
+  out
+}
+
 ## Only key variables listed
-usa_data_sub<-usa_data%>%
+usa_data_county_sub<-usa_data_county%>%
     select(-State,-County,-Date)
+
+usa_data_state_sub<-usa_data_county%>%
+  select(-State,-Date)
+
+
 
 # Define UI for application 
 ui <- fluidPage(
@@ -68,7 +107,7 @@ ui <- fluidPage(
 
     # Sidebar 
     sidebarLayout(
-        sidebarPanel( 
+        sidebarPanel( width=2,
             
             htmlOutput("state_selector"),
             
@@ -76,7 +115,7 @@ ui <- fluidPage(
             
               varSelectizeInput("variable", 
                              "Choose Measure:", 
-                             usa_data_sub,
+                             usa_data_county_sub,
                              selected = "`Case Count`",
                              multiple=FALSE
                             ),
@@ -101,28 +140,30 @@ ui <- fluidPage(
     
               Last update :
               ' ,last_update, " GMT"))
-        ),
+        ), # Ends sidebar
 
-        # Show a plot 
+        # Show a plot for either states or counties
         mainPanel(
-           plotlyOutput("casePlot")
-        )
-    )
-)
+        tabsetPanel(
+                    type = "tabs",
+                    tabPanel("County Level", plotlyOutput("casePlotCounty")),
+                    tabPanel("State Level", plotlyOutput("casePlotState"))
+        ) #close tabset
+        ) #close mainpanel
+    ) #close sidebarlayout 
+) ## Close fluidpage
 
 # Define server 
 server <- function(input, output,session) {
     
-    
 updateSelectizeInput(session,"county_choice","state_choice")     
-    
     
     output$state_selector <-    
         renderUI({
         selectizeInput(
             "state_choice",
             "State Choice",
-            choices = unique(usa_data$State),
+            choices = unique(usa_data_county$State),
             multiple = FALSE,
             selected = select_state)
         }) 
@@ -132,7 +173,7 @@ updateSelectizeInput(session,"county_choice","state_choice")
         
         req(input$state_choice)
         
-        usa_data%>%
+        usa_data_county%>%
             filter(State==input$state_choice)%>%
             mutate(County=fct_reorder(.f=as_factor(as.character(County)),.x=`Case Count`,.fun = "max",.desc = TRUE))%>%
             arrange(-`Case Count`)%>%
@@ -142,6 +183,8 @@ updateSelectizeInput(session,"county_choice","state_choice")
             select(County)%>%    
             as.vector()    
     })
+    
+    
       
     output$county_selector<-renderUI({
         ## Get list of counties    
@@ -155,15 +198,26 @@ updateSelectizeInput(session,"county_choice","state_choice")
                        selected=state_counties$County[1:5])
         })
     
-    output$casePlot <- renderPlotly({
+    output$casePlotCounty <- renderPlotly({
         
         req(input$state_choice,input$county_choice)
         
-     case_plot(usa_data,
+     county_case_plot(usa_data_county,
                input$state_choice,
                input$county_choice,
                deparse(input$variable),
               input$transformation)
+    })
+    
+    
+    output$casePlotState <- renderPlotly({
+      
+      req(input$state_list)
+      
+      state_case_plot(usa_data_state,
+                input$state_list,
+                deparse(input$variable),
+                input$transformation)
     })
     
     
