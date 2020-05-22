@@ -1,4 +1,3 @@
-
 ## Using USA Facts data
 ## Script downloads and preps case count data from: https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/
 ## Data courtesy of usa facts
