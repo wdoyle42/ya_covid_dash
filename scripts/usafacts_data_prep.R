@@ -1,4 +1,3 @@
-
 ## Using USA Facts data
 ## Script downloads and preps case count data from: https://usafacts.org/visualizations/coronavirus-covid-19-spread-map/
 ## Data courtesy of usa facts
@@ -54,12 +53,12 @@ if (file_change_time > last_update) {
   paste("No update necessary at", now())
 }
 ## Open case count data
-usa_data <- read_csv(here("data", "covid_confirmed_usafacts.csv"))
+usa_counts <- read_csv(here("data", "covid_confirmed_usafacts.csv"))
 
 ## Excluded county designations
 not_list <- c("Statewide Unallocated", "Grand Princess Cruise Ship")
 
-usa_data <- usa_data %>%
+usa_counts_county <- usa_counts %>%
   rename(County = `County Name`) %>%
   rename_all(str_to_title) %>%
   gather(key = Date,
@@ -73,9 +72,10 @@ usa_data <- usa_data %>%
   mutate(Date = mdy(Date)) %>%
   filter((Date) > as_date("2020-03-01"))
 
-usa_deaths <- read_csv(here("data", "covid_deaths_usafacts.csv"))
 
-usa_deaths <- usa_deaths %>%
+usa_deaths_county <- read_csv(here("data", "covid_deaths_usafacts.csv"))
+
+usa_deaths_county <- usa_deaths_county %>%
   rename(County = `County Name`) %>%
   rename_all(str_to_title) %>%
   gather(key = Date,
@@ -90,8 +90,8 @@ usa_deaths <- usa_deaths %>%
   filter((Date) > as_date("2020-03-01")) %>%
   select(County, State, Date, Deaths)
 
-usa_data <-
-  left_join(usa_data, usa_deaths, by = c("State" , "County", "Date")) %>%
+usa_data_county <-
+  left_join(usa_counts_county, usa_deaths_county, by = c("State" , "County", "Date")) %>%
   mutate(County = fct_reorder(
     .f = as_factor(County),
     .x = `Case Count`,
@@ -127,4 +127,54 @@ usa_data <-
 
 
 ## Write data out to app directory
-write_rds(usa_data, path = here("covid_usa_facts", "usa_data.Rds"))
+write_rds(usa_data_county, path = here("covid_usa_facts", "usa_data_county.Rds"))
+
+
+
+## State Level
+usa_counts_state<-usa_counts_county%>%
+  group_by(State,Date)%>%
+  summarise(`Case Count`=sum(`Case Count`))%>%
+  ungroup()
+
+usa_deaths_state<-usa_deaths_county%>%
+  group_by(State,Date)%>%
+  summarise(`Deaths`=sum(`Deaths`))%>%
+  ungroup()
+
+usa_data_state<-left_join(usa_counts_state,usa_deaths_state)%>%
+  mutate(State = fct_reorder(
+    .f = as_factor(State),
+    .x = `Case Count`,
+    .fun = "max",
+    .desc = TRUE
+  )) %>% # Ordered by prevalence
+  group_by(State) %>%
+  arrange(Date) %>%
+  mutate(`Daily Increase, Cases` = `Case Count` - lag(`Case Count`)) %>%
+  mutate(`Percent Change, Cases` = (((
+    `Case Count` - lag(`Case Count`)
+  ) / `Case Count`) * 100)) %>%
+  mutate(`3-Day Mean, New Cases`=rolling_3_mean(`Daily Increase, Cases`))%>%
+  mutate(`Daily Increase, Deaths` = `Deaths` - lag(`Deaths`)) %>%
+  mutate(`Percent Change, Deaths` = (((
+    `Deaths` - lag(`Deaths`)
+  ) / `Deaths`) * 100)) %>%
+  mutate(`3-Day Mean, New Deaths`=rolling_3_mean(`Daily Increase, Deaths`))%>% 
+  ungroup() %>%
+  select(
+    State,
+    Date,
+    `Case Count`,
+    `Daily Increase, Cases`,
+    `3-Day Mean, New Cases`,
+    `Percent Change, Cases`,
+    Deaths,
+    `Daily Increase, Deaths`,
+    `Percent Change, Deaths`,
+    `3-Day Mean, New Deaths`
+  )
+  
+
+## Write data out to app directory
+write_rds(usa_data_state, path = here("covid_usa_facts", "usa_data_state.Rds"))
