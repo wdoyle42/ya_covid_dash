@@ -109,6 +109,7 @@ usa_data <-
   mutate(`Percent Change, Deaths` = (((
     `Deaths` - lag(`Deaths`)
   ) / `Deaths`) * 100)) %>%
+  mutate(`3-Day Mean, New Deaths`=rolling_3_mean(`Daily Increase, Deaths`))%>% 
   ungroup() %>%
   select(
     County,
@@ -120,7 +121,8 @@ usa_data <-
     `Percent Change, Cases`,
     Deaths,
     `Daily Increase, Deaths`,
-    `Percent Change, Deaths`
+    `Percent Change, Deaths`,
+    `3-Day Mean, New Deaths`
   )
 
 
